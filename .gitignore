@@ -1,0 +1,3 @@
+# ignore the equation images
+equation_images/
+*.png
