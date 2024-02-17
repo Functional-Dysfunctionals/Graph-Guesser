@@ -6,6 +6,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QPen, QPainterPath, QPixmap, QPainter, QColor, QImage, QImageWriter, QIcon
 from PyQt5.QtCore import Qt, QSysInfo, pyqtSlot
 
+import os
+
 class InstructionWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -149,6 +151,9 @@ class DrawingApp(QMainWindow):
         # Save the image to a file (e.g., PNG format)
         image_writer = QImageWriter("output_image.png")
         image_writer.write(image)
+
+        # START HERE
+        os.system('python UploadUserInputs.py')
 
         print("Guessing . . . Image saved as output_image.png")
 

@@ -8,16 +8,15 @@ headers = {
     "Content-Type": "application/json"
 }
 
-data = {
+def setToUserInput(IDName):
+    data = {
     "dataset_inputs": [
         {
             "input": {
-                "id": "demo"
+                "id": IDName
             }
         }
     ]
 }
+    requests.post(url, headers=headers, data=json.dumps(data))
 
-response = requests.post(url, headers=headers, data=json.dumps(data))
-
-print(response.json())
