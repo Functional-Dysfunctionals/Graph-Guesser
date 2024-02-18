@@ -241,15 +241,15 @@ class DrawingApp(QMainWindow):
         def getTypes():
             string = ''
             for concept in output.data.concepts:
-                string += str("%s %.2f" % (concept.name, concept.value) + '\n')
+                formatted_percent = "{:.2%}".format(concept.value)
+                string += f"{concept.name} {formatted_percent}\n"
             return string
 
-        # Display the result in a new window
         result_text = getTypes()
         # Display the result in a new window
-        result_text = f"Your function is: {result_text}"  # Modify as needed
+        result_text = f"Your function is:\n {result_text}"  # Modify as needed
         result_window = ResultWindow(result_text)
-        result_window.exec_()     
+        result_window.exec_()
 
     @pyqtSlot()
     def close_instruction_window(self):
