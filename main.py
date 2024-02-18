@@ -1,93 +1,173 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import os
-import random
-import inspect
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QGraphicsScene, QGraphicsView, QToolBar,
+    QPushButton, QGraphicsPixmapItem, QGraphicsPathItem, QHBoxLayout, QVBoxLayout, 
+    QWidget, QSpacerItem, QSizePolicy, QTextBrowser, QLabel
+)
+from PyQt5.QtGui import QPen, QPainterPath, QPixmap, QPainter, QColor, QImage, QImageWriter, QIcon
+from PyQt5.QtCore import Qt, QSysInfo, pyqtSlot
 
-# Define the range of x values
-x_values = np.linspace(-10, 10, 1024)
+class InstructionWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
 
-# Define the number of graphs for each equation type
-num_graphs_per_type = 20
+        self.setWindowTitle("Instructions")
+        self.setGeometry(60, 167, 100, 200)  # Set the initial position and size
+        self.setWindowIcon(QIcon("icon.png"))
 
-# Create a directory to save the images
-if not os.path.exists('equation_images'):
-    os.makedirs('equation_images')
+        instructions_text = """
+        <html>
+            <body style="font-family: Arial; font-size: 16px; font-weight: bold;">
+                <p>Welcome to Graph Guesser!</p>
+                <p>Instructions:</p>
+                <ol>
+                    <li>Use the left mouse button to draw on the canvas.</li>
+                    <li>Click the 'Clear' button to clear the canvas.</li>
+                    <li>Draw a simple function, for example: y = x²</li>
+                    <li>Click the 'Guess' button to save and guess the drawn image.</li>
+                </ol>
+            </body>
+        </html>
+        """
 
-# Define the equations to be plotted
-equations = [
-    (lambda x, a, b: a * x + b, 'Linear: y = {:.0f}x + {:.0f}'),  # Linear equation
-    (lambda x, a, b, c: a * (x + b) ** 2 + c, 'Quadratic: y = {:.0f}(x + {:.0f})^2 + {:.0f}'),
-    # Quadratic equation (shift along x and y)
-    (lambda x, a, b, c: a * np.sin(b * (x + c)), 'Sine: y = {:.0f}sin({:.0f}(x + {:.0f}))'),
-    # Sine wave (shift along x, stretch/compress along x)
-    (lambda x, a, b: a * np.exp(b * x), 'Exponential: y = {:.0f}exp({:.0f}x)'),
-    # Exponential function (stretch/compress along x)
-    (lambda x, a, b: a * np.sqrt(np.abs(x) + np.abs(b)), 'Square Root: y = {:.0f}sqrt(|x| + |{:.0f}|)'),
-    # Square root function (stretch/compress along x)
-    (lambda x, *coefficients: np.polyval(coefficients[::-1], x), 'Polynomial: y = {}')
-    # Polynomial equation
-]
+        label = QLabel()
+        label.setTextFormat(Qt.RichText)
+        label.setText(instructions_text)
+        label.setOpenExternalLinks(True)
 
-# Loop over equations
-for idx, (equation, equation_label_template) in enumerate(equations):
-    # Generate one graph for each equation type
-    for i in range(num_graphs_per_type):
-        # Generate random parameters or coefficients with variability
-        params = []
-        for param in inspect.signature(equation).parameters.values():
-            if param.name == 'x':
-                continue
-            if param.annotation == int:
-                if idx == len(equations) - 1:  # For polynomial equation
-                    params.append(random.randint(-10, -1))  # Avoiding zero
-                else:
-                    params.append(random.randint(-5, -1))  # Avoiding zero
-            else:
-                if idx == len(equations) - 1:  # For polynomial equation
-                    params.append(random.uniform(-10, -1))  # Avoiding zero
-                else:
-                    params.append(random.uniform(-5, -1))  # Avoiding zero
+        layout = QVBoxLayout()
+        layout.addWidget(label)
 
-        # Ensure the polynomial starts from a higher degree to avoid x^0 term
-        if idx == len(equations) - 1:
-            degree = random.randint(2, 5)  # Random degree between 2 and 5
-            params = [random.randint(-10, 10) for _ in range(degree - 1)] + [random.randint(-10, 10)]  # Random coefficients and a constant transformation
+        central_widget = QWidget()
+        central_widget.setLayout(layout)
+        self.setCentralWidget(central_widget)
 
-        print(f"Equation {idx + 1}_{i + 1} Parameters: {params}")
+class DrawingApp(QMainWindow):
+    def __init__(self):
+        super().__init__()
 
-        # Generate (x, y) pairs
-        try:
-            y_values = equation(x_values, *params)
-        except ValueError:
-            print(f"Invalid parameter combination for Equation {idx + 1}_{i + 1}. Skipping.")
-            continue
+        self.instruction_window = InstructionWindow()  # Keep a reference to the instruction window
 
-        print(f"Equation {idx + 1}_{i + 1} y-values: {y_values}")
+        self.scene = QGraphicsScene(self)
+        self.view = QGraphicsView(self.scene)
+        self.view.setRenderHint(QPainter.Antialiasing)
+        self.view.setSizePolicy(self.view.sizePolicy().horizontalPolicy(), self.view.sizePolicy().verticalPolicy())
+        self.view.setSceneRect(0, 0, 730, 730)
 
-        # Plot the function within the limits of -10 to 10 for both axes
-        plt.figure(figsize=(6, 6))
-        plt.plot(x_values, y_values)
-        plt.xlim(-10, 10)
-        plt.ylim(-10, 10)
-        plt.xticks(np.arange(-10, 11, 2))
-        plt.yticks(np.arange(-10, 11, 2))
-        plt.axhline(0, color='black', linewidth=0.5)
-        plt.axvline(0, color='black', linewidth=0.5)
-        plt.grid(color='gray', linestyle='--', linewidth=0.5)
-        plt.xlabel('x')
-        plt.ylabel('y')
+        background_image = QPixmap("graph.png")
+        if not background_image.isNull():
+            background_item = QGraphicsPixmapItem(background_image)
+            self.scene.addItem(background_item)
 
-        # Format the equation label with actual parameter values
-        if idx == len(equations) - 1:
-            equation_label = equation_label_template.format(' + '.join([f'{coeff}x^{len(params) - i - 1}' for i, coeff in enumerate(params[:-1])]) + f' + {params[-1]}')
-        else:
-            equation_label = equation_label_template.format(*map(round, params))
+        self.clear_button = QPushButton("Clear")
+        self.clear_button.clicked.connect(self.clear_canvas)
+        self.guess_button = QPushButton("Guess")
+        self.guess_button.clicked.connect(self.guess_image)
+        self.setWindowIcon(QIcon("icon.png"))
 
-        # Annotate with the equation and parameters to the right of the graph
-        plt.text(9, 9, equation_label, fontsize=8, verticalalignment='top', horizontalalignment='right')
+        # Apply stylesheets for nicer button appearance
+        button_stylesheet = (
+            "QPushButton {"
+            "   background-color: #2299e3;"
+            "   color: white;"
+            "   border-radius: 10px;"
+            "   border: 2px solid #1775b0;" 
+            "   padding: 10px 20px;"
+            "   font-size: 16px;"
+            "}"
+            "QPushButton:hover {"
+            "   background-color: #135a87;" 
+            "}"
+        )
 
-        # Save the plot as an image
-        image_path = f'equation_images/equation_{idx + 1}_{i + 1}.png'
-        plt.savefig(image_path, dpi=150)
-        plt.close()
+        self.clear_button.setStyleSheet(button_stylesheet)
+        self.guess_button.setStyleSheet(button_stylesheet)
+
+        # Create a widget to hold the buttons
+        button_widget = QWidget()
+        button_layout = QHBoxLayout(button_widget)
+
+        # Add a stretchable space on the left
+        button_layout.addSpacerItem(QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        button_layout.addSpacerItem(QSpacerItem(6, 20, QSizePolicy.Fixed, QSizePolicy.Minimum))
+
+        # Add the "Clear" and "Guess" buttons
+        button_layout.addWidget(self.clear_button)
+        button_layout.addWidget(self.guess_button)
+
+        # Add a stretchable space on the right
+        button_layout.addSpacerItem(QSpacerItem(90, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))  # Adjusted width to 90 pixels
+
+        # Create the toolbar and add the button widget
+        self.toolbar = QToolBar("Toolbar", movable=False)
+        self.toolbar.addWidget(button_widget)
+        
+        # Set the allowed area for the toolbar
+        self.toolbar.setAllowedAreas(Qt.BottomToolBarArea)
+        
+        self.addToolBar(Qt.BottomToolBarArea, self.toolbar)
+
+        self.path = None
+        self.pen = QPen(QColor(39, 118, 174), 3, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+        self.scene.mousePressEvent = self.start_drawing
+        self.scene.mouseMoveEvent = self.draw
+        self.setCentralWidget(self.view)
+        self.setWindowTitle("Graph Guesser")
+        self.centralWidget().setSizePolicy(self.centralWidget().sizePolicy().horizontalPolicy(), self.centralWidget().sizePolicy().verticalPolicy())
+        self.setFixedSize(732, 801)
+
+    def start_drawing(self, event):
+        if event.button() == Qt.LeftButton:
+            self.path = QPainterPath()
+            pos = event.scenePos()
+            self.path.moveTo(pos)
+
+    def draw(self, event):
+        if self.path is not None and event.buttons() == Qt.LeftButton:
+            pos = event.scenePos()
+            self.path.lineTo(pos)
+            self.scene.addPath(self.path, self.pen)
+
+    def clear_canvas(self):
+        for item in self.scene.items():
+            if isinstance(item, QGraphicsPathItem):
+                self.scene.removeItem(item)
+
+    def guess_image(self):
+        # Get the visible rect in scene coordinates
+        visible_rect = self.view.mapToScene(self.view.viewport().rect()).boundingRect()
+
+        # Set the scene rect to the visible area
+        self.scene.setSceneRect(visible_rect)
+
+        # Render the scene into an image
+        image = QImage(self.view.viewport().size(), QImage.Format_ARGB32)
+        image.fill(Qt.transparent)
+        painter = QPainter(image)
+        self.scene.render(painter)
+        painter.end()
+
+        # Save the image to a file (e.g., PNG format)
+        image_writer = QImageWriter("output_image.png")
+        image_writer.write(image)
+
+        print("Guessing . . . Image saved as output_image.png")
+
+    @pyqtSlot()
+    def close_instruction_window(self):
+        self.instruction_window.close()
+
+if __name__ == "__main__":
+    app = QApplication([])
+
+    # Create and show the main window
+    main_window = DrawingApp()
+    main_window.show()
+
+    # Connect the destroyed signal of the main window to the custom slot
+    main_window.destroyed.connect(main_window.close_instruction_window)
+
+    # Create and show the instruction window
+    instruction_window = main_window.instruction_window
+    instruction_window.show()
+
+    app.exec_()
