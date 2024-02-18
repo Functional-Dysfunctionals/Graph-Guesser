@@ -1,0 +1,3 @@
+# don't include node modules
+
+node_modules

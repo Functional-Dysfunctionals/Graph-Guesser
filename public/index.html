@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Guesser</title>
+    <style>
+        /* Styles for the modal */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+        }
+
+        /* Modal content */
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto; /* 10% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; /* Could be more or less, depending on screen size */
+            border-radius: 10px; /* Rounded borders */
+        }
+
+        /* Close button */
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Other styles */
+        body {
+            font-family: Arial;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 90vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            width: 100%;
+            background-color: #0052a3;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            box-sizing: border-box; /* Include padding in width calculation */
+        }
+
+        #title {
+            color: #333; /* Dark grey text color */
+            margin: 0; /* Remove default margin */
+        }
+
+        #icon {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #004080; /* Dark blue border */
+            border-radius: 50%;
+        }
+        #instructionsButton {
+            background-color: #333; /* Dark grey button color */
+            color: white;
+            border-radius: 10px;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        /* Increase font size of instructions */
+        .modal-content p {
+            font-size: 20px;
+        }
+
+        canvas {
+            border: 2px solid #1775b0;
+            border-radius: 10px;
+            cursor: crosshair;
+            margin-bottom: 20px;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            position: absolute;
+            bottom: 50px;
+            left: 1030px;
+            transform: translateX(-50%);
+        }
+
+        .button-container button {
+            background-color: #2299e3;
+            color: white;
+            border-radius: 10px;
+            border: 2px solid #1775b0;
+            padding: 10px 20px;
+            font-size: 25px;
+            margin: 0 10px;
+            cursor: pointer;
+        }
+
+        .button-container button:hover {
+            background-color: #135a87;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img id="icon" src="icon.png" alt="Icon">
+        <h1 id="title">Graph Guesser</h1>
+    </div>
+    <py-script>display("Hello World!")</py-script>
+    <button id="instructionsButton">Instructions</button>
+    <canvas id="drawingCanvas" width="730" height="730"></canvas>
+    <div class="button-container">
+        <button id="clearButton">Clear</button>
+        <a href="output.html">
+        <button id="guessButton">Guess</button>
+        </a>
+        <a href="output.html">
+            <button>Click Me!</button>
+        </a>
+        
+    </div>
+
+    <!-- The modal -->
+    <div id="instructionsModal" class="modal">
+        <!-- Modal content -->
+        <div class="modal-content">
+            
+            <span class="close">&times;</span>
+            <p>Welcome to Graph Guesser! Instructions:</p>
+            <ol>
+                <li>Use the left mouse button to draw on the canvas.</li>
+                <li>Click the "Clear" button to clear the canvas.</li>
+                <li>Draw a simple function, for example: y=x^2</li>
+                <li>Click the "Guess" button to save and guess the drawn image.</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('drawingCanvas');
+        const context = canvas.getContext('2d');
+        const clearButton = document.getElementById('clearButton');
+        const guessButton = document.getElementById('guessButton');
+        const instructionsButton = document.getElementById('instructionsButton');
+        const modal = document.getElementById('instructionsModal');
+        const closeBtn = document.getElementsByClassName('close')[0];
+
+        // Load background image
+        const backgroundImage = new Image();
+        backgroundImage.src = 'graph.png';
+        backgroundImage.onload = () => {
+            context.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+        };
+
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            context.beginPath();
+            context.moveTo(lastX, lastY);
+            context.lineTo(e.offsetX, e.offsetY);
+            context.strokeStyle = '#2776ae';
+            context.lineWidth = 3;
+            context.lineCap = 'round';
+            context.lineJoin = 'round';
+            context.stroke();
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+
+        function clearCanvas() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            // Redraw background image after clearing canvas
+            context.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+        }
+
+        function guessImage() {
+            const dataURL = canvas.toDataURL();
+            const link = document.createElement('a');
+            modal.style.display = 'block';
+            link.href = dataURL;
+            link.download = 'output_image.png';
+            link.click();
+            console.log('Guessing... Image saved as output_image.png');
+        }
+
+        function showModal() {
+            modal.style.display = 'block';
+        }
+
+        function hideModal() {
+            modal.style.display = 'none';
+        }
+
+        // Event listeners
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mouseout', () => isDrawing = false);
+
+        clearButton.addEventListener('click', clearCanvas);
+        guessButton.addEventListener('click', guessImage);
+        instructionsButton.addEventListener('click', showModal);
+        closeBtn.addEventListener('click', hideModal);
+    </script>
+</body>
+</html>
