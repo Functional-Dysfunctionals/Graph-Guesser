@@ -152,6 +152,10 @@ class DrawingApp(QMainWindow):
             if isinstance(item, QGraphicsPathItem):
                 self.scene.removeItem(item)
 
+        # Check if the ResultWindow is open and close it
+        if hasattr(self, 'result_window') and self.result_window.isVisible():
+            self.result_window.close()
+
     def guess_image(self):
         # Get the visible rect in scene coordinates
         visible_rect = self.view.mapToScene(self.view.viewport().rect()).boundingRect()
@@ -173,10 +177,10 @@ class DrawingApp(QMainWindow):
         # Placeholder for the actual function guessing logic
         guessed_function = "y = x^2"  # Replace this with your actual guessing logic
 
-        # Display the result in a new window
+        # Display the result in a new window without blocking the main window
         result_text = f"Your function is: {guessed_function}, 56% similar"  # Modify as needed
-        result_window = ResultWindow(result_text)
-        result_window.exec_()
+        self.result_window = ResultWindow(result_text)
+        self.result_window.show()
 
         print("Guessing . . . Image saved as output_image.png")
 
