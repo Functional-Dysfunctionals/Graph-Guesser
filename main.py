@@ -1,10 +1,30 @@
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QGraphicsScene, QGraphicsView, QToolBar,
     QPushButton, QGraphicsPixmapItem, QGraphicsPathItem, QHBoxLayout, QVBoxLayout, 
-    QWidget, QSpacerItem, QSizePolicy, QTextBrowser, QLabel
+    QWidget, QSpacerItem, QSizePolicy, QTextBrowser, QLabel, QDialog
 )
 from PyQt5.QtGui import QPen, QPainterPath, QPixmap, QPainter, QColor, QImage, QImageWriter, QIcon
 from PyQt5.QtCore import Qt, QSysInfo, pyqtSlot
+
+class ResultWindow(QDialog):
+    def __init__(self, result_text):
+        super().__init__()
+
+        self.setWindowTitle("Guess Result")
+        self.setGeometry(75, 450, 400, 100)
+
+        label = QLabel(result_text)
+        label.setAlignment(Qt.AlignCenter)
+        
+        # Increase the font size for better readability
+        font = label.font()
+        font.setPointSize(16)
+        label.setFont(font)
+
+        layout = QVBoxLayout()
+        layout.addWidget(label)
+
+        self.setLayout(layout)
 
 class InstructionWindow(QMainWindow):
     def __init__(self):
@@ -150,7 +170,16 @@ class DrawingApp(QMainWindow):
         image_writer = QImageWriter("output_image.png")
         image_writer.write(image)
 
+        # Placeholder for the actual function guessing logic
+        guessed_function = "y = x^2"  # Replace this with your actual guessing logic
+
+        # Display the result in a new window
+        result_text = f"Your function is: {guessed_function}, 56% similar"  # Modify as needed
+        result_window = ResultWindow(result_text)
+        result_window.exec_()
+
         print("Guessing . . . Image saved as output_image.png")
+
 
     @pyqtSlot()
     def close_instruction_window(self):
